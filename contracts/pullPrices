@@ -4,14 +4,22 @@ import "./Oraclize.sol";
 contract pullPrices is usingProvable {
 
     string public coinA;
+    string public coinB;
+    string public coinC;
+    mapping(bytes32=>bool) validIds;
+    bytes32 public queryCoinA;
+    bytes32 public queryCoinB;
+    bytes32 public queryCoinC;
     event LogPriceUpdated(string price);
     event LogNewProvableQuery(string description);
 
        function __callback(bytes32 myid, string memory result) public {
+        if (!validIds[myid]) revert();
         if (msg.sender != provable_cbAddress()) revert();
-        coinA = result;
+        if (myid == queryCoinA) coinA = result;
+        else if (myid == queryCoinB) coinB = result;
+        else if (myid == queryCoinC) coinC = result;
         emit LogPriceUpdated(result);
-        updatePrice();
     }
    
     function updatePrice() public payable {
@@ -20,11 +28,15 @@ contract pullPrices is usingProvable {
         } else {
           emit LogNewProvableQuery("Provable query was sent, standing by for the answer..");
 
-           provable_query("URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=XRPUSDT).price");
+          queryCoinA = provable_query("URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price");
+          validIds[queryCoinA] = true;
+                    queryCoinB = provable_query("URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT).price");
+          validIds[queryCoinB] = true;
+                    queryCoinC = provable_query("URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=XRPUSDT).price");
+          validIds[queryCoinC] = true;
         }
     }
     
     function () external payable {
         //accept ether
-}
-}
+} }
